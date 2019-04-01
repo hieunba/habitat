@@ -825,19 +825,10 @@ impl Manager {
                 break ShutdownMode::Departed;
             }
 
-            if !feat::is_enabled(feat::IgnoreSignals) {
-                // Normally, we'd use an `if let Some(...)`
-                // formulation here, but we can't add `#cfg[...]`
-                // annotations to `if` expressions right now.
-                //
-                // We *can* add them to match arms, though!
-                match signals::check_for_signal() {
-                    #[cfg(unix)] // Passthrough SignalEvents aren't a thing on Windows
-                    Some(SignalEvent::Passthrough(Signal::HUP)) => {
-                        outputln!("Supervisor shutting down for signal");
-                        break ShutdownMode::Restarting;
-                    }
-                    _ => {}
+            if !feat::is_enabled(feat::IgnoreSignals) && cfg!(unix) {
+                if let Some(SignalEvent::Passthrough(Signal::HUP)) = signals::check_for_signal() {
+                    outputln!("Supervisor shutting down for signal");
+                    break ShutdownMode::Restarting;
                 }
             }
 
