@@ -1,0 +1,82 @@
+version: '3.2'
+services:
+  bastion:
+    image: habitat/default-studio-x86_64-linux:0.78.0
+    command:
+      - "run"
+      - "--listen-ctl=0.0.0.0:9632"
+      - "--permanent-peer"
+    volumes:
+      - type: bind
+        source: ./CTL_SECRET
+        target: /hab/sup/default/CTL_SECRET
+        read_only: false
+      - type: bind
+        source: /hab/cache
+        target: /hab/cache
+        read_only: false
+      - type: bind
+        source: /hab/pkgs
+        target: /hab/pkgs
+        read_only: false
+      - type: bind
+        source: "/${HOME}/habitat/target/debug/hab"
+        target: /usr/bin/hab
+        read_only: false
+      - type: bind
+        source: "${HOME}/habitat/target/debug/hab-sup"
+        target: /usr/bin/hab-sup
+        read_only: false
+      - type: bind
+        source: "${HOME}/habitat/target/debug/hab-launch"
+        target: /usr/bin/hab-launch
+        read_only: false
+    environment:
+      - HAB_NONINTERACTIVE=1
+      - HAB_SUP_BINARY=/usr/bin/hab-sup
+      - HAB_LAUNCH_BINARY=/usr/bin/hab-launch
+      - HAB_LAUNCH_NO_SUP_VERSION_CHECK=1
+      - RUST_LOG=debug,rustc_metadata=error,cargo=error,jobserver=error,rustc_trans=error,rustc_driver=error,rustc_mir=error,rustc=error,tokio_core=info
+      - PATH=/usr/bin:/bin
+    entrypoint: /bin/hab
+
+  peers:
+    image: habitat/default-studio-x86_64-linux:0.78.0
+    command:
+      - "run"
+      - "--listen-ctl=0.0.0.0:9632"
+      - "--peer=bastion"
+    volumes:
+      - type: bind
+        source: ./CTL_SECRET
+        target: /hab/sup/default/CTL_SECRET
+        read_only: false
+      - type: bind
+        source: /hab/cache
+        target: /hab/cache
+        read_only: false
+      - type: bind
+        source: /hab/pkgs
+        target: /hab/pkgs
+        read_only: false
+      - type: bind
+        source: "/${HOME}/habitat/target/debug/hab"
+        target: /usr/bin/hab
+        read_only: false
+      - type: bind
+        source: "${HOME}/habitat/target/debug/hab-sup"
+        target: /usr/bin/hab-sup
+        read_only: false
+      - type: bind
+        source: "${HOME}/habitat/target/debug/hab-launch"
+        target: /usr/bin/hab-launch
+        read_only: false
+    environment:
+      - HAB_NONINTERACTIVE=1
+      - HAB_SUP_BINARY=/usr/bin/hab-sup
+      - HAB_LAUNCH_BINARY=/usr/bin/hab-launch
+      - HAB_LAUNCH_NO_SUP_VERSION_CHECK=1
+      - RUST_LOG=debug,rustc_metadata=error,cargo=error,jobserver=error,rustc_trans=error,rustc_driver=error,rustc_mir=error,rustc=error,tokio_core=info
+    entrypoint: /bin/hab
+    links:
+      - "bastion"
