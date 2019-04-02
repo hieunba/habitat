@@ -79,6 +79,7 @@ use hab::{analytics,
           PRODUCT,
           VERSION};
 use habitat_common as common;
+use habitat_common::feature_flags;
 use habitat_core as hcore;
 use habitat_sup_client as sup_client;
 use habitat_sup_protocol as protocol;
@@ -120,7 +121,7 @@ lazy_static! {
 fn main() {
     env_logger::init();
     let mut ui = UI::default_with_env();
-    enable_features_from_env(&mut ui);
+    feature_flags::enable_features_from_env(&mut ui);
     thread::spawn(analytics::instrument_subcommand);
     if let Err(e) = start(&mut ui) {
         ui.fatal(e).unwrap();
@@ -1471,35 +1472,6 @@ fn excludes_from_matches(matches: &ArgMatches<'_>) -> Vec<PackageIdent> {
         .unwrap_or_default()
         .map(|i| PackageIdent::from_str(i).unwrap()) // unwrap safe as we've validated the input
         .collect()
-}
-
-fn enable_features_from_env(ui: &mut UI) {
-    let features = vec![(feat::List, "LIST"),
-                        (feat::OfflineInstall, "OFFLINE_INSTALL"),
-                        (feat::IgnoreLocal, "IGNORE_LOCAL"),
-                        (feat::InstallHook, "INSTALL_HOOK"),];
-
-    // If the environment variable for a flag is set to _anything_ but
-    // the empty string, it is activated.
-    for feature in &features {
-        if henv::var(format!("HAB_FEAT_{}", feature.1)).is_ok() {
-            feat::enable(feature.0);
-            ui.warn(&format!("Enabling feature: {:?}", feature.0))
-              .unwrap();
-        }
-    }
-
-    if feat::is_enabled(feat::List) {
-        ui.warn("Listing feature flags environment variables:")
-          .unwrap();
-        for feature in &features {
-            ui.warn(&format!("  * {:?}: HAB_FEAT_{}={}",
-                             feature.0,
-                             feature.1,
-                             henv::var(format!("HAB_FEAT_{}", feature.1)).unwrap_or_default()))
-              .unwrap();
-        }
-    }
 }
 
 fn handle_ctl_reply(reply: &SrvMessage) -> result::Result<(), SrvClientError> {

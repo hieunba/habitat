@@ -47,6 +47,7 @@ use clap::ArgMatches;
 use habitat_common::{cli::{cache_key_path_from_matches,
                            GOSSIP_DEFAULT_PORT},
                      command::package::install::InstallSource,
+                     feature_flags,
                      output::{self,
                               OutputFormat,
                               OutputVerbosity},
@@ -57,7 +58,6 @@ use habitat_common::{cli::{cache_key_path_from_matches,
 use habitat_core::crypto::dpapi::encrypt;
 use habitat_core::{crypto::{self,
                             SymKey},
-                   env as henv,
                    url::{bldr_url_from_env,
                          default_bldr_url},
                    ChannelIdent};
@@ -92,7 +92,8 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn main() {
     env_logger::init();
-    enable_features_from_env();
+    let mut ui = UI::default_with_env();
+    feature_flags::enable_features_from_env(&mut ui);
     let result = start();
     let exit_code = match result {
         Ok(_) => 0,
@@ -443,36 +444,6 @@ fn get_password_from_input(m: &ArgMatches) -> Result<Option<String>> {
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 fn get_password_from_input(_m: &ArgMatches) -> Result<Option<String>> { Ok(None) }
-
-fn enable_features_from_env() {
-    let features = vec![(feat::List, "LIST"),
-                        (feat::TestExit, "TEST_EXIT"),
-                        (feat::TestBootFail, "BOOT_FAIL"),
-                        (feat::RedactHTTP, "REDACT_HTTP"),
-                        (feat::IgnoreSignals, "IGNORE_SIGNALS"),
-                        (feat::InstallHook, "INSTALL_HOOK"),
-                        (feat::EventStream, "EVENT_STREAM"),];
-
-    // If the environment variable for a flag is set to _anything_ but
-    // the empty string, it is activated.
-    for feature in &features {
-        if henv::var(format!("HAB_FEAT_{}", feature.1)).is_ok() {
-            feat::enable(feature.0);
-            outputln!("Enabling feature: {:?}", feature.0);
-        }
-    }
-
-    if feat::is_enabled(feat::List) {
-        outputln!("Listing feature flags environment variables:");
-        for feature in &features {
-            outputln!("     * {:?}: HAB_FEAT_{}={}",
-                      feature.0,
-                      feature.1,
-                      henv::var(format!("HAB_FEAT_{}", feature.1)).unwrap_or_default());
-        }
-        outputln!("The Supervisor will start now, enjoy!");
-    }
-}
 
 fn set_supervisor_logging_options(m: &ArgMatches) {
     if m.is_present("VERBOSE") {

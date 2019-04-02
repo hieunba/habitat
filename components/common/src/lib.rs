@@ -14,6 +14,14 @@
 
 use habitat_api_client as api_client;
 use habitat_core as hcore;
+
+// These extern crate calls appear to be *required* for using the
+// features crate.
+#[macro_use]
+extern crate bitflags;
+#[macro_use]
+extern crate features;
+
 extern crate json;
 #[macro_use]
 extern crate log;
@@ -33,6 +41,7 @@ pub use self::error::{Error,
 pub mod cli;
 pub mod command;
 pub mod error;
+pub mod feature_flags;
 pub mod locked_env_var;
 pub mod output;
 pub mod package_graph;
